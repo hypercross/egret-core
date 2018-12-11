@@ -49,7 +49,7 @@ namespace egret.web {
         /**
          * 第一次上传顶点数组标记量
          */
-        public firstTimeUploadVertices: boolean;
+        public needInitBufferData: boolean = true;
 
         /**
          * 当前program key值
@@ -162,9 +162,9 @@ namespace egret.web {
         private uploadVerticesArray(array: any): void {
             let gl: any = this.context;
 
-            if (this.firstTimeUploadVertices) {
+            if (this.needInitBufferData) {
+                this.needInitBufferData = false;
                 gl.bufferData(gl.ARRAY_BUFFER, array, gl.DYNAMIC_DRAW);
-                this.firstTimeUploadVertices = false;
             }
             else {
                 gl.bufferSubData(gl.ARRAY_BUFFER, 0, array);
@@ -207,13 +207,14 @@ namespace egret.web {
 
             this.setGlobalCompositeOperation("source-over");
 
-            this.firstTimeUploadVertices = true;
+            this.needInitBufferData = true;
 
         }
 
         public setBatchSize(size: number): void {
             const result = this.vao.setBatchSize(size);
             if (result) {
+                this.needInitBufferData = true;
                 this.uploadIndicesArray(this.vao.getIndices());
             }
         }
@@ -840,27 +841,38 @@ namespace egret.web {
          * 绘制粒子
          */
         public drawParticle(node: sys.ParticleNode) {
-            let buffer = this.currentBuffer;
-            let image = node.image;
+            const vao = this.vao;
+            const float32Array = vao.float32Array;
+            const index = vao.vertexIndex * vao.vertSize;
+            const nodeVertices = node.vertices;
+            const length = index + nodeVertices.length;
+            if (length > float32Array.length) {
+                /*
+                This is a temporary solution, not the best, because the particle system‘s vb format are inconsistent with other display objects, 
+                it is better to use 2 vb? 
+                setBatchSize is not very accurate.
+                If you don't do this, you will get an error when the number of particles exceeds the existing batchsize.
+                */
+                egret.warn('index + nodeVertices.length = ' + length 
+                + ' > float32Array.length = ' + float32Array.length 
+                + '! need to adjust the size of the batch = ' + length);
+                this.setBatchSize(length);
+                return;
+            }
+            const buffer = this.currentBuffer;
+            const image = node.image;
             if (this.contextLost || !image || !buffer) {
                 return;
             }
-
-            let texture: WebGLTexture = this.getWebGLTexture(image);
+            const texture: WebGLTexture = this.getWebGLTexture(image);
             if (!texture) {
                 return;
             }
-
-            let count = node.numParticles * 2;
+            const count = node.numParticles * 2;
             this.drawCmdManager.pushDrawTexture(texture, count, this.$filter, image.width, image.height);
-
-
-            let float32Array = this.vao.float32Array;
-            let index = this.vao.vertexIndex * this.vao.vertSize;
-            float32Array.set(node.vertices, index);
-
-            this.vao.vertexIndex += node.numProperties * node.numParticles;
-            this.vao.indexIndex += 6 * node.numParticles;
+            float32Array.set(nodeVertices, index);
+            vao.vertexIndex += node.numProperties * node.numParticles;
+            vao.indexIndex += 6 * node.numParticles;
         }
 
         /**

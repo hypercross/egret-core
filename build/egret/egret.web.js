@@ -5696,6 +5696,10 @@ var egret;
          */
         var WebGLRenderContext = (function () {
             function WebGLRenderContext() {
+                /**
+                 * 第一次上传顶点数组标记量
+                 */
+                this.needInitBufferData = true;
                 this.glID = null;
                 this.projectionX = NaN;
                 this.projectionY = NaN;
@@ -5716,7 +5720,7 @@ var egret;
                 this.vao = new web.WebGLVertexArrayObject();
                 this.setBatchSize(2000);
                 this.setGlobalCompositeOperation("source-over");
-                this.firstTimeUploadVertices = true;
+                this.needInitBufferData = true;
             }
             WebGLRenderContext.getInstance = function () {
                 if (this.instance) {
@@ -5770,9 +5774,9 @@ var egret;
              */
             WebGLRenderContext.prototype.uploadVerticesArray = function (array) {
                 var gl = this.context;
-                if (this.firstTimeUploadVertices) {
+                if (this.needInitBufferData) {
+                    this.needInitBufferData = false;
                     gl.bufferData(gl.ARRAY_BUFFER, array, gl.DYNAMIC_DRAW);
-                    this.firstTimeUploadVertices = false;
                 }
                 else {
                     gl.bufferSubData(gl.ARRAY_BUFFER, 0, array);
@@ -5788,6 +5792,7 @@ var egret;
             WebGLRenderContext.prototype.setBatchSize = function (size) {
                 var result = this.vao.setBatchSize(size);
                 if (result) {
+                    this.needInitBufferData = true;
                     this.uploadIndicesArray(this.vao.getIndices());
                 }
             };
@@ -6323,6 +6328,23 @@ var egret;
              * 绘制粒子
              */
             WebGLRenderContext.prototype.drawParticle = function (node) {
+                var vao = this.vao;
+                var float32Array = vao.float32Array;
+                var index = vao.vertexIndex * vao.vertSize;
+                var nodeVertices = node.vertices;
+                var length = index + nodeVertices.length;
+                if (length > float32Array.length) {
+                    /*
+                    This is a temporary solution, not the best, because the particle system‘s vb format are inconsistent with other display objects,
+                    it is better to use 2 vb?
+                    setBatchSize is not very accurate.
+                    */
+                    egret.warn('index + nodeVertices.length = ' + length
+                        + ' > float32Array.length = ' + float32Array.length
+                        + '! need to adjust the size of the batch = ' + length);
+                    this.setBatchSize(length);
+                    return;
+                }
                 var buffer = this.currentBuffer;
                 var image = node.image;
                 if (this.contextLost || !image || !buffer) {
@@ -6334,11 +6356,9 @@ var egret;
                 }
                 var count = node.numParticles * 2;
                 this.drawCmdManager.pushDrawTexture(texture, count, this.$filter, image.width, image.height);
-                var float32Array = this.vao.float32Array;
-                var index = this.vao.vertexIndex * this.vao.vertSize;
-                float32Array.set(node.vertices, index);
-                this.vao.vertexIndex += node.numProperties * node.numParticles;
-                this.vao.indexIndex += 6 * node.numParticles;
+                float32Array.set(nodeVertices, index);
+                vao.vertexIndex += node.numProperties * node.numParticles;
+                vao.indexIndex += 6 * node.numParticles;
             };
             /**
              * 绘制遮罩
