@@ -85,11 +85,9 @@ namespace egret.web {
             return false;
         }
 
-        public reachMaxSize(vertexCount?: number, indexCount?: number): boolean {
-            if (vertexCount === void 0) { vertexCount = 4; }
-            if (indexCount === void 0) { indexCount = 6; }
+        public reachMaxSize(vertexCount: number = 4, indexCount: number = 6): boolean {
             return this.vertexIndex > this.vertexMaxSize - vertexCount || this.indexIndex > this.indicesMaxSize - indexCount;
-        };
+        }
 
         /**
          * 获取缓存完成的顶点数组
