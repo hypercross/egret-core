@@ -5267,6 +5267,7 @@ var egret;
          * 用来维护顶点数组
          */
         var WebGLVertexArrayObject = (function () {
+            //private vertexActualSize: number;
             function WebGLVertexArrayObject() {
                 this.vertSize = 4;
                 this.vertexIndex = 0;
@@ -5294,11 +5295,21 @@ var egret;
                         this.indices[i + 5] = j + 3;
                     }
                     //用于drawImageByRenderNode 计算
-                    this.vertexActualSize = this.vertexMaxSize - 4;
+                    //this.vertexActualSize = this.vertexMaxSize - 4;
                     return true;
                 }
                 return false;
             };
+            WebGLVertexArrayObject.prototype.reachMaxSize = function (vertexCount, indexCount) {
+                if (vertexCount === void 0) {
+                    vertexCount = 4;
+                }
+                if (indexCount === void 0) {
+                    indexCount = 6;
+                }
+                return this.vertexIndex > this.vertexMaxSize - vertexCount || this.indexIndex > this.indicesMaxSize - indexCount;
+            };
+            ;
             /**
              * 获取缓存完成的顶点数组
              */
@@ -5718,7 +5729,7 @@ var egret;
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
                 this.drawCmdManager = new web.WebGLDrawCmdManager();
                 this.vao = new web.WebGLVertexArrayObject();
-                this.setBatchSize(2000);
+                this.setBatchSize(1);
                 this.setGlobalCompositeOperation("source-over");
                 this.needInitBufferData = true;
             }
@@ -6087,6 +6098,9 @@ var egret;
                 if (!texture) {
                     return;
                 }
+                if (this.vao.reachMaxSize()) {
+                    this.$drawWebGL();
+                }
                 var smoothing = node.smoothing;
                 if (smoothing != undefined && texture["smoothing"] != smoothing) {
                     this.drawCmdManager.pushChangeSmoothing(texture, smoothing);
@@ -6338,6 +6352,7 @@ var egret;
                     This is a temporary solution, not the best, because the particle system‘s vb format are inconsistent with other display objects,
                     it is better to use 2 vb?
                     setBatchSize is not very accurate.
+                    If you don't do this, you will get an error when the number of particles exceeds the existing batchsize.
                     */
                     egret.warn('index + nodeVertices.length = ' + length
                         + ' > float32Array.length = ' + float32Array.length

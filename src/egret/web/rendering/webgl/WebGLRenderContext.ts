@@ -203,7 +203,7 @@ namespace egret.web {
             this.drawCmdManager = new WebGLDrawCmdManager();
 
             this.vao = new WebGLVertexArrayObject();
-            this.setBatchSize(2000);
+            this.setBatchSize(1);
 
             this.setGlobalCompositeOperation("source-over");
 
@@ -555,6 +555,10 @@ namespace egret.web {
 
             if (!texture) {
                 return;
+            }
+
+            if (this.vao.reachMaxSize()) {
+                this.$drawWebGL();
             }
 
             let smoothing = node.smoothing;

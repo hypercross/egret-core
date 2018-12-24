@@ -51,7 +51,7 @@ namespace egret.web {
 
         public hasMesh: boolean = false;
 
-        private vertexActualSize: number;
+        //private vertexActualSize: number;
 
         public constructor() {
 
@@ -79,11 +79,17 @@ namespace egret.web {
                     this.indices[i + 5] = j + 3;
                 }
                 //用于drawImageByRenderNode 计算
-                this.vertexActualSize = this.vertexMaxSize - 4;
+                //this.vertexActualSize = this.vertexMaxSize - 4;
                 return true;
             }
             return false;
         }
+
+        public reachMaxSize(vertexCount?: number, indexCount?: number): boolean {
+            if (vertexCount === void 0) { vertexCount = 4; }
+            if (indexCount === void 0) { indexCount = 6; }
+            return this.vertexIndex > this.vertexMaxSize - vertexCount || this.indexIndex > this.indicesMaxSize - indexCount;
+        };
 
         /**
          * 获取缓存完成的顶点数组
