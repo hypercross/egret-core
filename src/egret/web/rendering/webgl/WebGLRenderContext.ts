@@ -203,7 +203,7 @@ namespace egret.web {
             this.drawCmdManager = new WebGLDrawCmdManager();
 
             this.vao = new WebGLVertexArrayObject();
-            this.setBatchSize(1);
+            this.setBatchSize(2000);
 
             this.setGlobalCompositeOperation("source-over");
 

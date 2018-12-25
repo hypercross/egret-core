@@ -5724,7 +5724,7 @@ var egret;
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
                 this.drawCmdManager = new web.WebGLDrawCmdManager();
                 this.vao = new web.WebGLVertexArrayObject();
-                this.setBatchSize(1);
+                this.setBatchSize(2000);
                 this.setGlobalCompositeOperation("source-over");
                 this.needInitBufferData = true;
             }
